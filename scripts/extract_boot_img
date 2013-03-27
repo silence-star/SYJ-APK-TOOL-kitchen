@@ -1,0 +1,99 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+#
+# This scripts extracts the contents of the boot.img from any folder
+#
+
+clear
+
+date_str=`date '+%m%d%y_%H%M%S'`
+boot_dir=bootimg_$date_str
+
+echo
+echo "创建文件夹 `pwd`/$boot_dir ..."
+mkdir $boot_dir
+
+echo
+echo "---> 请把 boot.img/recovery.img 放到上述文件夹 <--"
+
+scripts/press_enter
+
+cd $boot_dir
+
+if [ -e boot.img ] || [ -e recovery.img ]
+then
+
+  if [ -e recovery.img ]
+  then
+    echo "Renaming recovery.img to boot.img (for convenience of scripts)"
+    mv -f recovery.img boot.img
+  fi
+
+  cd ..
+  scripts/check_bootimg_header $boot_dir
+  scripts/check_kernel_offset $boot_dir
+  res=$?
+
+  if [ "$res" == "0" ]
+  then
+    kernel_file=extract-kernel.pl
+    ramdisk_file=extract-ramdisk.pl
+  else
+    rm -rf $boot_dir
+    exit 0
+  fi
+
+  cd $boot_dir
+  cp ../tools/extract_boot_files/$kernel_file extract-kernel.pl
+  cp ../tools/extract_boot_files/$ramdisk_file extract-ramdisk.pl
+
+  echo
+  echo 提取 kernel ...
+  ./extract-kernel.pl boot.img 2>/dev/null
+      
+  if [ ! -e zImage ]
+  then
+    echo "错误: 未发现 zImage!"
+  else
+    test_z=`od -A n -j 1 -N 4 zImage | sed 's/ //g'`
+    if [ "$test_z" == "" ]
+    then
+      echo "错误: zImage 是空的!"
+    fi
+  fi
+
+  echo 提取 ramdisk ... 
+  ./extract-ramdisk.pl boot.img 2>/dev/null
+      
+  if [ ! -d boot.img-ramdisk ]
+  then
+    echo "错误: 未发现 ramdisk 文件夹!"
+  fi
+
+  rm boot.img
+  rm extract-*.pl
+  cd ..
+  echo
+  echo "$boot_dir 的内容:"
+  echo
+  echo "`ls -l $boot_dir`"
+
+
+else
+  echo "错误: 未发现 boot.img 或 recovery.img!"
+  echo
+  cd ..
+  echo "删除 $boot_dir 文件夹"
+  rm -rf $boot_dir
+  exit 0
+fi      
+  
+

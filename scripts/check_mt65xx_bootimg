@@ -1,0 +1,60 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+#
+# This script has two parameters
+#
+# $1 = folder of boot.img (optional)
+# $2 = offset in boot.img to kernel (in decimal) (optional)
+#       - can only be specified if $1 also specified
+#
+
+working_folder=$1
+dec_offset=$2
+
+if [ "$working_folder" == "" ]
+then
+  cd WORKING_*
+  working_folder=`pwd`
+  cd ..
+
+  if [ "$dec_offset" == "" ]
+  then
+    dec_offset=`scripts/get_boot_img_page_size $working_folder`
+  fi  
+fi
+
+
+base_dir=`pwd`
+
+# Check for MT65XX
+cd $working_folder
+
+if [ ! -e boot.img ]
+then
+  cd $base_dir
+  echo "错误: 未发现 boot.img"
+  exit 0
+fi
+
+# Location of "KERNEL" string
+str_offset=$(($dec_offset+8))
+if [ "`od -A n -h -j $str_offset -N 6 boot.img | sed 's/ //g'`" \
+    == "454b4e524c45" ]
+then
+  echo
+  echo "检测到 MT65xx kernel 的文件头 "
+  cd $base_dir
+  exit 1
+fi
+
+cd $base_dir
+exit 0
+

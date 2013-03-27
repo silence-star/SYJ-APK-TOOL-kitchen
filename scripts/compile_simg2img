@@ -1,0 +1,49 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+simg2img_file=simg2img
+if [ `uname | grep CYGWIN` ]
+then
+  simg2img_file=$simg2img_file.exe
+fi
+
+if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
+then
+  echo "发现 $simg2img_file"
+else
+  echo "编译 simg2img ..."
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    if [ `grep -c __CYGWIN__ tools/samsung_files/simg2img_files/simg2img.c` == 0 ]
+    then
+      echo "(But first, adding Cygwin patch for simg2img.c)"
+      sed -i -e '0,/#include/s//\/* dsixda patch *\/\n#if defined(__CYGWIN__)\n#  define lseek64 lseek\n#  define ftruncate64 ftruncate\n#endif\n\n#include/g' \
+        tools/samsung_files/simg2img_files/simg2img.c
+    fi
+  fi
+
+  cd tools/samsung_files/simg2img_files
+  gcc -c sparse_crc32.c
+  gcc sparse_crc32.o simg2img.c -w -o simg2img
+  rm *.o 
+  cd ../../..
+
+  if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
+  then
+    echo "$simg2img_file 编译成功"
+  else
+    echo "错误: $simg2img_file 编译失败!"
+    exit 1
+  fi    
+fi
+
+exit 0
+

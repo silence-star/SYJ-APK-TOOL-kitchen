@@ -1,0 +1,255 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+#############################################################################
+
+#
+# This script has four mandatory arguments:
+#
+# $1 = base directory of the kitchen
+# $2 = path to system folder under working directory
+# $3 = path to img file
+# $4 = name of img file (e.g. hidden.img or tomb.img.ext4)
+#
+
+
+base_dir=$1
+system_dir=$2
+hidden_dir=$3
+img_file=$4
+
+
+######################################################################
+# Check for symlinks to /preload/symlink/system/app under /system/app
+######################################################################
+
+cd $system_dir/app
+
+# First check for *.apk and *.odex with symlink to preload/symlink/system/app
+# and delete them (this works for Linux / OS X)
+
+preload_links=( `find . -type l -exec ls -l {} \; | grep /preload/symlink/system/app | sed 's/.* \/preload\/symlink\/system\/app\/\(.*\)/\1/g'` )
+
+if [ "$preload_links" != "" ]
+then
+
+  num_preload_links=${#preload_links[@]}
+
+  echo 
+  echo -n "在 /system/app 中,  从 /preload/symlink/system/app 中删除到 APK 和 ODEX 文件的 <<$num_preload_links>> 符号链接"
+  for item in ${preload_links[@]} 
+  do
+    echo -n "."
+    rm -f $item  
+  done
+
+  use_hidden=1
+
+else
+
+  # Check if the number of odex files outnumbers number of apks (this works for Cygwin)
+
+  num_odex_app=`find . | grep -c "\.odex$"`
+  num_apk_app=`find . | grep -c "\.apk$"`
+
+  if [ $num_odex_app -gt $num_apk_app ]
+  then
+    echo
+    echo " /system/app 文件夹中丢失了一些apk文件(也许是 ODEX 文件)."
+
+    use_hidden=1
+
+   elif [ `uname | grep CYGWIN` ]
+   then
+
+    # Check for versions higher than Gingerbread/ICS (this is a workaround for Cygwin)
+
+    cd $system_dir
+    if [ "`grep -c ro.build.version.release=2 build.prop`" == "0" ] && \
+        [ "`grep -c ro.build.version.release=4.0 build.prop`" == "0" ]
+    then
+      echo
+      echo " /system/app 文件夹可能会缺少一些 APK/ODEX 文件"
+
+      use_hidden=1
+    fi
+
+   fi
+fi
+
+cd $base_dir
+
+if [ "$use_hidden" == "1" ]
+then
+  
+  echo
+  echo "这些可能会在 $img_file 中找到"
+
+  if [ ! -e $hidden_dir/$img_file ]
+  then
+    echo
+    echo "--> 请将 $img_file 放到 '$hidden_dir' 文件夹下 <--"
+    echo "             (你也可以忽略这一步)"
+    echo
+    
+    scripts/press_enter
+
+    if [ ! -e $hidden_dir/$img_file ]
+    then
+      echo "跳过 $img_file"
+    fi
+  fi
+
+
+  #
+  # $img_file unpacking
+  #
+
+  if [ -e $hidden_dir/$img_file ]
+  then
+
+    working_dir=$system_dir/..
+    hidden_dir2=$working_dir/hidden
+    mkdir $hidden_dir2
+    cd $hidden_dir2
+    hidden_dir2=`pwd`
+    cd $base_dir
+
+    echo
+    echo "为解包转换 $img_file 成一种格式 ... ..."
+    tools/samsung_files/simg2img_files/simg2img $hidden_dir/$img_file \
+      $hidden_dir2/ext4_hidden.img
+
+    if [ ! -e $hidden_dir2/ext4_hidden.img ]
+    then
+      echo "未能转换 $img_file!"
+      exit 1
+    fi
+
+    if [ "$hidden_dir" != "original_update" ]
+    then
+      rm -f $hidden_dir/$img_file
+    fi
+
+    #
+    # Extract files from ext4_hidden.img
+    #
+
+    if [ `uname | grep CYGWIN` ]
+    then
+      scripts/show_ext2explore $hidden_dir2 ext4_hidden.img
+    else
+      scripts/extract_ext3_img $hidden_dir2 ext4_hidden.img
+    fi
+
+    rm -f $hidden_dir2/ext4_hidden.img 2>/dev/null
+    if [ "$?" == "1" ]
+    then
+      echo
+      echo "警告: ext4_hidden.img 正在使用中，请在应用程序关闭后手动删除文件。"
+      echo
+    fi
+
+    echo
+
+    #
+    # Check if preload files are found in $img_file
+    #
+    if [ -d $hidden_dir2/symlink/system/app ] 
+    then
+      num_preload_apk=`find $hidden_dir2/symlink/system/app | grep -c "\.apk$"`
+      num_preload_odex=`find $hidden_dir2/symlink/system/app | grep -c "\.odex$"`
+
+      num_preload_total=$(($num_preload_apk + $num_preload_odex))
+
+      if [ $num_preload_total -gt 0 ]
+      then
+        echo "在 $img_file 中发现 <<$num_preload_total>> APK 和 ODEX 文件"
+        mkdir -p $working_dir/preload/symlink/system
+        mv $hidden_dir2/symlink/system/app $working_dir/preload/symlink/system/ 
+
+        if [ "$num_preload_links" != "" ]
+        then
+          if [ $num_preload_links != $num_preload_total ]
+          then
+            echo "警告: 这个数字不等于先前在 /system/app 下找到的符号链接!"
+          else
+            echo "这个数字与先前在 /system/app 下找到的符号链接相同"
+          fi
+        fi
+
+
+        #
+        # Closing comments about /preload stuff
+        #
+
+        device_name=`scripts/get_samsung_variant`
+
+        if [ "$device_name" == "" ]
+        then
+          echo
+          echo "警告: 在 /tools/edify_defs 中尚未确定设备名称!"
+          echo
+        else
+          preload_mnt=`scripts/get_edify_def_val $device_name preload_mnt`
+
+          if [ "$preload_mnt" != "UNKNOWN" ]
+          then
+            echo
+            preload_mnt=`echo $preload_mnt | sed -e 's/\\\\//g'`
+
+            echo "在 /tools/edify_defs/$device_name 中 /preload 的挂载点已为此设备定义"
+            echo "为 $preload_mnt . "
+            echo "Good."
+          else
+            echo
+            echo "警告: /preload 的挂载点 ('preload_mnt') 在"
+            echo "tools/edify_defs/$device_name 中未定义! 请在进行下一步前确定指定好"
+            echo "(在完成后输入回车，或者跳过这一步)。"
+            echo
+            scripts/press_enter
+          fi
+        fi
+
+        echo 
+        echo "注意: 如果你想要对这个 ROM 进行 de-odex 合并, 你需要在 de-odex 合并前"
+        echo "从 /preload 文件夹移动 APK 和 ODEX 文件到 /system/app。厨房将会自动处理。"
+        echo
+
+        scripts/press_enter
+
+      else
+        echo "警告: 在 $img_file 中未发现 APK/ODEX 文件!"
+      fi
+    else
+      echo "警告: 在 $img_file 中未发现 /preload/symlink/system/app 文件夹!"
+    fi
+
+    echo
+    echo
+
+    rm -rf $hidden_dir2
+  fi
+
+elif [ -e $hidden_dir/$img_file ]
+then
+  echo
+  echo "忽略 $img_file"
+
+  if [ "$hidden_dir" != "original_update" ]
+  then
+    rm -f $hidden_dir/$img_file
+  fi
+fi
+
+
+
+
+cd $base_dir
+
+

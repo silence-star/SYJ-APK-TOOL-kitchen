@@ -1,0 +1,83 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+
+nand=false
+
+cd WORKING_*
+if [ -e boot.img ]
+then
+
+  cd ..
+  cmd_line=`scripts/get_cmdline`
+
+  if [ "$cmd_line" == "dsixda NAND" ]
+  then
+    nand=true
+    original_type=boot.img
+  fi
+
+elif [ -d boot ] && [ -e boot/initrd.gz ] && [ -e boot/zImage ]
+then
+  nand=true
+  original_type="boot folder"
+  cd ..
+
+else
+  cd ..
+fi
+
+
+if [ "$nand" == "true" ]
+then
+
+  echo
+  echo "已检测到 NAND ROM (已检查 $original_type),选择创建类型:"
+  echo
+  echo "  1 = 创建 ROM 和 /boot 文件夹 (例如适用 MAGLDR bootloader)"
+  echo "  2 = 创建 ROM 和 boot.img     (例如适用 cLK bootloader)"
+  echo
+  echo -n "请输入选择项：(默认=1) "
+
+  read enter_option
+  echo
+
+  #
+  # Use /boot folder in ROM
+  #
+  if [ "$enter_option" != "2" ]
+  then
+
+    if [ "$original_type" == "boot.img" ]
+    then
+      echo "转换 boot.img 到 boot 文件夹 ..."
+      scripts/ensure_boot_extracted no_clear
+      scripts/build_nand_boot
+    else
+      echo "已经存在 /boot 文件夹，不需要更改"
+    fi
+
+  #
+  # Use boot.img in ROM
+  #
+  else
+    echo "转换 boot.img 为合适的 boot.img ..."
+    scripts/ensure_boot_extracted no_clear
+    scripts/build_boot_img_for_nand
+  fi
+
+fi
+
+
+
+
+
+
+

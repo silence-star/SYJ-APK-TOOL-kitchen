@@ -1,0 +1,69 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+
+
+cd WORKING_*
+
+if [ -d system/sd ]
+then
+  if [ ! -e move_cache_sd ]
+  then
+
+    echo -n "你是否想移动dalvik-cache到SD卡(y/n)? (默认: y): "
+    read do_cachesd
+
+    if [ "$do_cachesd" != "n" ]
+    then
+
+      cd ..
+      scripts/add_busybox
+      cd WORKING_*
+
+      echo "添加 move_cache_sd 到工作文件夹中 ..."
+      cp ../tools/apps2sd_files/move_cache_sd .
+
+      cd META-INF/com/google/android 
+
+      if [ `grep -c move_cache_sd update-script` == 0 ]
+      then
+        echo "添加 move_cache_sd 到 update-script 脚本"
+        if [ `grep -c "write_raw_image .*:boot.img BOOT:" update-script` != 0 ]
+        then
+          sed -i -e 's/write_raw_image \(.*boot.img\) BOOT:/run_program PACKAGE:move_cache_sd\nwrite_raw_image \1 BOOT:/' update-script
+        else
+          echo "run_program PACKAGE:move_cache_sd" >> update-script
+        fi
+      fi
+
+      if [ `grep -c move_cache_sd update-script` == 0 ]
+      then
+        echo "错误: 未能添加 move_cache_sd 到 update-script 脚本！"
+      else
+        echo "move_cache_sd 已在 update-script 脚本中"
+      fi
+
+      cd ../../../..
+
+    fi
+
+  else
+    echo "move_cache_sd 已在工作文件夹发现"
+
+  fi
+
+else
+  echo "警告: 未在工作文件夹中找到 system/sd!"
+
+fi
+
+cd ..
+scripts/fix_update_script_blanks
+
