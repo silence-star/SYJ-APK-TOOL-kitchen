@@ -145,6 +145,8 @@ scripts/check_galaxy_s2x
 s2x=$?
 scripts/check_galaxy_s3_common
 s3_common=$?
+scripts/check_galaxy_s4_common
+s4_common=$?
 
 cd WORKING_*
 cd META-INF/com/google/android

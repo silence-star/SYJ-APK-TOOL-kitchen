@@ -246,7 +246,7 @@ do
       echo
       echo "在工作文件夹以外创建备份文件夹 $backup_folder ..."
       mkdir ../../../$backup_folder
-      cp  * ../../../$backup_folder/
+      cp  -r * ../../../$backup_folder/
       echo "$f 文件夹已完成备份."
 
       cd ../..

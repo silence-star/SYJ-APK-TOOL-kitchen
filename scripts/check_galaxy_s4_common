@@ -1,0 +1,29 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+my_model=`scripts/get_product_model`
+
+cd tools/samsung_files/model_variants/galaxy_s4
+
+for variant_name in `ls`
+do     
+   for model_name in `ls $variant_name` 
+   do
+      if [ "$model_name" == "$my_model" ]		
+      then
+        cd ../..
+        exit 1
+      fi
+   done
+done
+
+cd ../../../..
+
+exit 0

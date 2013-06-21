@@ -188,7 +188,7 @@ do
     if [ "$found_error" == "1" ]
     then
       echo
-      echo "不能 deodex 以下 *.odex (你可以重试，deodex 这些文件):"
+      echo "警告：不能 deodex 以下 *.odex (你可以重试，deodex 这些文件):"
       echo `ls *.odex`
       echo
       cd ../..
