@@ -1,0 +1,88 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+
+clear
+
+
+echo
+
+api_level=`scripts/get_api_level`
+
+cd WORKING_*
+
+grep_cmd=`find . | grep \\.odex$ | sort -f`
+
+if [ "$grep_cmd" == "" ]
+then
+  echo "错误: 未发现文件!"
+  cd ..
+  scripts/press_enter
+  exit 0
+fi
+
+count=0
+
+rm -f ../temp.list
+
+echo >> ../temp.list
+echo "所有 ODEX 文件:" >> ../temp.list
+echo >> ../temp.list
+
+for filename in $grep_cmd 
+do
+  count=$(($count+1))
+
+  # Store file names in an array
+  file_array[$count]=$filename
+  echo "  ($count) $filename" >> ../temp.list
+done
+
+more ../temp.list
+rm -f ../temp.list
+
+echo
+echo -n "输入文件编号 (0 = 取消): "
+
+read enterNumber
+
+if [ "$enterNumber" == "0" ]
+then
+  cd ..
+  exit 0
+
+# Verify input is a number
+elif [ "`echo $enterNumber | sed 's/[0-9]*//'`" == "" ]
+then
+
+  file_chosen=${file_array[$enterNumber]}
+
+  if [ "$file_chosen" == "" ]
+  then
+    cd ..
+    exit 0
+  fi
+
+  cd ..
+  version=`scripts/get_smali_version`
+  cd WORKING_*
+  cp -f ../tools/deodex_files/baksmali-$version.jar baksmali.jar
+  cp -f ../tools/deodex_files/smali-$version.jar smali.jar
+
+  ../scripts/do_deodex_file $api_level $file_chosen system/framework
+  result=$?
+  rm -f *smali.jar
+
+fi
+
+
+cd ..
+scripts/press_enter
+

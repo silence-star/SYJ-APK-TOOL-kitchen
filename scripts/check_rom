@@ -1,0 +1,144 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+#
+# This script has two optional arguments: 
+#
+# $1 = "no_info"      - specify this when porting or extracting kernel
+# $2 = "kernel_only"  - if this is specified, then $1 is mandatory
+#
+
+echo
+echo "正在为 ROM 创建工作文件夹"
+echo "=============================="
+echo
+echo "确保至少有一个 ROM 在 'original_update' 文件夹下!"
+echo
+echo "请选择以下几个选项:"
+echo
+echo "  s -- 显示支持的格式"
+echo "  x -- 退出，不创建工作文件夹"
+echo "  Enter -- 直接浏览'original_update' 文件夹 "
+echo ""
+echo
+echo -n " 请输入选择项或直接回车："
+read proceed
+  
+if [ "$proceed" == "x" ]
+then
+  echo
+  echo "取消"
+  exit 1
+
+elif [ "$proceed" == "s" ]
+then
+  
+  more tools/formats.txt
+
+  echo
+  echo -n "按回车键继续, 或选择 'x' 退出: "
+  read proceed
+  
+  if [ "$proceed" == "x" ]
+  then
+    exit 1
+  fi
+
+fi
+
+scripts/make_backup_working
+
+#
+# Check if the working folder was actually backed up
+#
+result=$?
+
+if [ "$result" == "1" ]
+then
+
+  echo
+  echo "错误: 旧的工作文件夹正在使用，确保其文件或文件夹没有打开。"
+  scripts/press_enter
+  exit 1
+
+else
+
+  scripts/choose_rom $2
+  res=$?
+
+  if [ "$res" == "1" ] && [ "$2" == "kernel_only" ]
+  then
+    scripts/press_enter
+  fi
+
+  if [ `ls | grep -m 1 WORKING_` ] && [ "$res" != "1" ] && [ "$1" == "" ]
+  then
+
+    #
+    # Check for radio.img
+    #
+
+    echo
+    cd WORKING*
+    if [ -e radio.img ]
+    then
+      echo
+      echo "注意: 工作文件夹中发现 radio.img ，如果你想移除它，"
+      echo "你可以在生成 ROM 之前任何时间移除。"
+    else
+
+      if [ -e META-INF/com/google/android/update-script ]
+      then
+        cd ..
+        scripts/update_script_should_convert_back ignore_msg
+        res=$?
+        cd WORKING_*
+      fi
+    fi
+
+    if [ -e boot.img ] 
+    then
+      boot_found=yes
+    elif [ -e boot/zImage ] && [ -e boot/initrd.gz ]
+    then
+      boot_found=yes
+    else
+      boot_found=no
+    fi
+
+    if [ "$boot_found"=="yes" ]
+    then
+
+      #
+      # Prompt to show ROM info
+      # 
+
+      if [ "$1" == "" ]
+      then
+        cd ..
+        scripts/prompt_show_rom_info
+      else
+        cd ..
+      fi
+
+    else
+      echo
+      echo "未发现 boot.img 文件!"
+      cd ..
+    fi
+  fi
+fi
+
+if [ "$1" == "" ]
+then
+  scripts/press_enter
+fi
+
+exit $res

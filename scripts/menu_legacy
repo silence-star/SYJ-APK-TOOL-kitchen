@@ -1,0 +1,66 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+#!/bin/bash
+ 
+version=$1
+
+while :
+do
+
+  clear
+
+  echo 
+  echo "============================================================"
+  echo " SYJ-APK-TOOL厨房插件 $version by MAL神族-沉默之星（汉化）"
+  echo "============================================================"
+  echo
+  echo "> 遗留选项"
+  echo
+  echo " 21 - 检查 update-script 刷机脚本是否有错误"
+  echo " 22 - 添加无线共享功能 ，Android 2.2及以上版本不需要此功能"
+  echo " 23 - 添加内存调整和优化，以提升速度 （仅限官方ROM）"
+  echo " 24 - 添加 Nano文本编辑器 + sysro/sysrw（调整system分区读写权限脚本）"
+  echo " 25 - 添加 Bash（shell命令的解释器）"
+  echo " 26 - 添加 Apps2SD 功能"
+  echo " 27 - 添加对自定义开机动画的支持"
+  echo " 28 - 移植工具（实验性的）"
+  echo
+  echo " 99 - 从工作文件夹建立ROM刷机包"
+  echo "  0 - 返回主操作菜单"
+  echo
+  echo -n "请输入选择项: "
+  read opt
+
+  if [ "$opt" != "0" ]
+  then
+    scripts/check_multiple_working
+  fi
+
+  if [ "$?" != "1" ]
+  then
+    case $opt in
+      21) scripts/verify_update_script; continue;;
+      22) scripts/add_tether;;
+      23) scripts/task_killer;;
+      24) scripts/add_nano show_help;;
+      25) scripts/add_bash show_help;;
+      26) scripts/add_apps2sd show_help;;
+      27) scripts/add_custom_boot_anim;;
+      28) scripts/porting_tools; continue;;
+      99) scripts/build_rom;;
+      0) exit 1;;
+      *) echo "错误选项"; continue;;
+    esac
+  fi
+
+  scripts/press_enter
+
+done

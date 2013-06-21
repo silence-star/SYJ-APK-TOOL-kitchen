@@ -1,0 +1,111 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+scripts/ensure_boot_extracted no_clear
+
+if [ -d BOOT-EXTRACTED ]
+then
+  if [ -d WORKING_* ]
+  then
+    echo -n 
+  else
+    exit 0
+  fi
+else
+  exit 0
+fi
+
+echo
+
+if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+then
+  cd BOOT-EXTRACTED/boot.img-ramdisk
+else
+  echo "错误: 未发现 BOOT-EXTRACTED/boot.img-ramdisk 文件夹!"
+  exit 0
+fi
+
+changed=0
+echo "检查 default.prop ..."
+
+if [ "`grep -om 1 ro.secure=1 default.prop`" == "ro.secure=1" ]
+then
+  echo "设置: ro.secure=0"
+  perl -pi -e 's/ro.secure=1/ro.secure=0/g' default.prop
+  changed=1
+fi
+
+if [ "`grep -om 1 ro.debuggable=0 default.prop`" == "ro.debuggable=0" ]
+then
+  echo "设置: ro.debuggable=1"
+  perl -pi -e 's/ro.debuggable=0/ro.debuggable=1/g' default.prop
+  changed=1
+fi
+
+
+# Enable ADB in ICS and newer
+usb_config=`grep ^persist.sys.usb.config default.prop`
+
+if [ "$usb_config" != "" ]
+then
+
+  if [ "`echo $usb_config | grep ,adb`" == "" ]
+  then
+    sed -i -e 's/^\(persist.sys.usb.config=.*\)[ ]*$/\1,adb/g' default.prop
+    echo "设置: `grep persist.sys.usb.config default.prop`"    
+    changed=1
+  fi
+
+# Enable ADB in versions older than ICS
+else
+
+  adb_enable=`grep persist.service.adb.enable default.prop`
+
+  if [ "$adb_enable" != "" ]
+  then
+
+    if [ "`grep -om 1 persist.service.adb.enable=0 default.prop`" == "persist.service.adb.enable=0" ]
+    then
+      echo "设置: persist.service.adb.enable=1"
+      perl -pi -e 's/persist.service.adb.enable=0/persist.service.adb.enable=1/g' default.prop
+      changed=1
+    fi 
+
+  else
+    echo "添加: persist.service.adb.enable=1"
+    echo "persist.service.adb.enable=1" >> default.prop
+    changed=1
+  fi
+fi
+
+
+
+
+if [ $changed == 1 ]
+then
+  echo
+  echo 新的 default.prop:
+  more default.prop
+  echo
+
+  if [ -e default.prop.bak ]
+  then
+    rm default.prop.bak
+  fi
+
+  cd ../..
+  scripts/build_boot_img
+
+else
+  echo "default.prop 不需要更改"
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+fi
+

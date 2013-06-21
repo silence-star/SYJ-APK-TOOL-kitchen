@@ -1,0 +1,99 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = path to working folder (optional)
+#
+
+
+if [ "$1" == "" ]
+then
+  cd WORKING_*
+  working_dir=`pwd`
+  cd system
+else
+  working_dir=$1
+  cd $working_dir
+
+  if [ -d system ]
+  then
+    cd system
+  fi
+fi
+
+system_dir=`pwd`
+
+if [ -e sec_csc.zip ]
+then
+  csc_zip=sec_csc.zip
+elif [ -e csc.zip ]
+then
+  csc_zip=csc.zip
+else 
+  echo "警告: 未发现 CSC.zip 文件!"
+fi
+
+if [ $csc_zip ]
+then
+  echo "从 $csc_zip 中提取所需的文件 ..."
+  unzip -q $csc_zip -d temp_csc
+
+  # 
+  # Carrier bloatware removal
+  #
+  if [ -d temp_csc ]
+  then
+
+    cd temp_csc
+    apk_files=`find . -name *.apk`
+
+    if [ "$apk_files" != "" ]
+    then
+      echo
+      echo "这些都是在 $csc_zip 中找到的应用程序:"
+      echo 
+      for apk in $apk_files
+      do
+        echo $apk
+      done
+
+      echo
+      echo -n "将应用程序复制到你的工作文件夹 (y/n)? (默认: n): "
+
+      read do_copy
+      echo
+
+      if [ "$do_copy" != "y" ]
+      then
+        rm -vf $apk_files
+      fi
+    fi
+
+    cd ..
+
+    rm -rf temp_csc/META-INF
+    cp -rf temp_csc/system/* .
+    rm -rf temp_csc
+  fi
+fi
+
+rm -f $csc_zip 2>/dev/null
+if [ "$?" == "1" ]
+then
+  echo
+  echo "警告: $csc_zip 正在使用中，请在应用程序关闭后手动删除文件。"
+  echo
+fi
+
+cd ../..
+
+

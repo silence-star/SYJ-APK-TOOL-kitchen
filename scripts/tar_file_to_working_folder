@@ -1,0 +1,153 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+#
+# This script has two arguments:
+#
+# $1 = file name (mandatory)
+# $2 = "kernel_only" or "name_given" (optional)
+#
+
+
+update_file=$1
+ 
+echo "已选择 $update_file"
+
+# Trim spaces in file name
+update_file2=`echo $update_file | tr ' ' '_'`
+
+if [ "$update_file" != "$update_file2" ]
+then
+  echo "重命名为 $update_file2"
+  mv "original_update/$update_file" original_update/$update_file2
+  update_file=$update_file2
+fi
+
+#
+# Working folder name
+#
+build_dir=`scripts/set_working_folder_name $2` 
+
+
+#
+# Creating folder structure
+#
+
+echo
+echo "创建工作文件夹 $build_dir ..."
+mkdir $build_dir
+
+echo
+echo "从 TAR 文件解压 ROM ..."
+
+tar xvf original_update/$update_file -C $build_dir -x factoryfs.img cache.img modem.bin \
+      zImage factoryfs.rfs cache.rfs PDA.tar.md5 CSC.tar.md5 PHONE.tar.md5 PDA.tar CSC.tar \
+      PHONE.tar system.img system.img.ext4 system.rfs cache.img.ext4 boot.img csc.rfs \
+      system hidden.img tomb.img.ext4 2>/dev/null
+
+cd $build_dir
+
+echo
+
+if [ -e factoryfs.img ]
+then
+
+  if [ -e zImage ]
+  then
+    cd ..
+    scripts/show_rooted_kernel_msg
+    cd $build_dir
+  fi
+
+  cd ..
+  scripts/simg_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e system.img ]
+then
+
+  cd ..
+  scripts/img_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e system.img.ext4 ]
+then
+
+  cd ..
+  scripts/simg_ext4_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e factoryfs.rfs ]
+then
+
+  if [ -e zImage ]
+  then
+    cd ..
+    scripts/show_rooted_kernel_msg
+    cd $build_dir
+  fi
+
+  cd ..
+  scripts/rfs_files_to_working_folder no_create $2
+  exit $?
+
+
+elif [ -e system.rfs ]
+then
+
+  cd ..
+  scripts/rfs_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e PDA.tar ]
+then
+
+  cd ..
+  scripts/sgs_tar_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e PDA.tar.md5 ]
+then
+
+  cd ..
+  scripts/sgs_tarmd5_files_to_working_folder no_create $2
+  exit $?
+
+
+elif [ -d system ]
+then
+
+  mkdir -p META-INF/com/google/android
+  echo
+  echo "添加 update-script 刷机脚本 ..."
+  cp ../tools/update_files/update-script META-INF/com/google/android/
+
+  cd ..
+  if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+  then
+
+    scripts/fix_update_script 
+
+    # Modify the update-script with features found
+    scripts/fix_update_script_with_features
+    
+    scripts/remove_recovery
+  fi
+    
+  exit 0
+
+else
+  echo "错误: 没有在 TAR 压缩文件中发现 image 镜像!"
+  echo 
+  cd ..
+  exit 1
+fi
+
+

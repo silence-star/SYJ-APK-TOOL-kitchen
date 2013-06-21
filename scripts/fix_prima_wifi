@@ -1,0 +1,32 @@
+############################################################################
+#
+# 本定制工具完全免费，DsiXDA版权所有，由MAL神族-沉默之星完成汉化翻译。
+# 
+# 理论上支持所有民间刷机包的定制，完美支持HTC的所有民间和官方刷机包！
+#
+# 欢迎光临全球最大中兴社区：神族论坛（http://bbs.malshenzu.com/）
+#
+############################################################################
+
+cd WORKING_*
+
+if [ -e system/vendor/firmware/wlan/prima/WCNSS_cfg.dat ]
+then
+  
+  if [ `grep -c WCNSS_qcom_cfg.ini META-INF/com/google/android/update-script` == 0 ] && \
+      [ `grep -c WCNSS_qcom_wlan_nv.bin META-INF/com/google/android/update-script` == 0 ] 
+  then
+    echo "为 Prima WLAN 设备添加符号链接 ..."
+
+    rm -f system/vendor/firmware/wlan/prima/WCNSS_qcom_cfg.ini
+    rm -f system/vendor/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin
+
+    sed -i \
+      -e 's/\(set_perm_recursive 0 0 0755 0644 SYSTEM:[ ]*$\)/symlink \/data\/misc\/wifi\/WCNSS_qcom_cfg.ini SYSTEM:vendor\/firmware\/wlan\/prima\/WCNSS_qcom_cfg.ini\n\1/g' \
+      -e 's/\(set_perm_recursive 0 0 0755 0644 SYSTEM:[ ]*$\)/symlink \/data\/misc\/wifi\/WCNSS_qcom_wlan_nv.bin SYSTEM:vendor\/firmware\/wlan\/prima\/WCNSS_qcom_wlan_nv.bin\n\1/g' \
+    META-INF/com/google/android/update-script
+  fi    
+fi
+
+cd ..
+
